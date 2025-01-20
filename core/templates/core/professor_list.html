@@ -1,0 +1,82 @@
+{% extends "base.html" %}
+
+{% block title %}Professors and Teachers{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row mb-4">
+        <div class="col">
+            <h2>Department Professors and Teachers</h2>
+        </div>
+        <div class="col-auto">
+            <a href="{% url 'professor_create' %}" class="btn btn-primary">Add New</a>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-body">
+            {% if professors %}
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Full Name</th>
+                            <th>Email</th>
+                            <th>Role</th>
+                            <th>Department</th>
+                            <th>Specialty</th>
+                            <th>Max Hours</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for professor in professors %}
+                        <tr>
+                            <td>{{ professor.user.get_full_name }}</td>
+                            <td>{{ professor.user.email }}</td>
+                            <td>
+                                {% if professor.role == 'PR' %}
+                                    <span class="badge bg-primary">Professor</span>
+                                {% else %}
+                                    <span class="badge bg-info">Teacher</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ professor.department.name }}</td>
+                            <td>{{ professor.specialty.title }}</td>
+                            <td>{{ professor.max_hours }}</td>
+                            <td>
+                                <div class="btn-group">
+                                    <a href="#" class="btn btn-sm btn-outline-primary">Edit</a>
+                                    <a href="#" class="btn btn-sm btn-outline-danger">Delete</a>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="text-center py-4">
+                <p class="text-muted mb-0">No professors or teachers found.</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<style>
+    .badge {
+        padding: 0.5em 0.75em;
+        font-weight: 500;
+    }
+    .table > :not(caption) > * > * {
+        padding: 1rem;
+    }
+    .btn-group > .btn {
+        margin: 0 0.25rem;
+    }
+    .table-hover tbody tr:hover {
+        background-color: #f8fafc;
+    }
+</style>
+{% endblock %}

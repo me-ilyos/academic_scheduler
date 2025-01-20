@@ -1,0 +1,93 @@
+{% extends "dashboard_layout.html" %}
+
+{% block title %}{{ curriculum.title }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid p-4">
+    <div class="card">
+        <div class="card-body">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2>{{ curriculum.title }}</h2>
+                <a href="{% url 'curriculum_update' curriculum.pk %}" class="btn btn-secondary">Edit</a>
+            </div>
+
+            <div class="row mb-4">
+                <div class="col-md-3">
+                    <strong>Code:</strong> {{ curriculum.code }}
+                </div>
+                <div class="col-md-3">
+                    <strong>Degree:</strong> {{ curriculum.get_degree_type_display }}
+                </div>
+                <div class="col-md-3">
+                    <strong>Duration:</strong> {{ curriculum.duration }} years
+                </div>
+                <div class="col-md-3">
+                    <strong>Total Credits:</strong> {{ curriculum.total_credits }}
+                </div>
+            </div>
+
+            <div class="table-responsive mt-4">
+                <table class="table table-bordered">
+                    <thead>
+                        <tr>
+                            <th rowspan="2">Code</th>
+                            <th rowspan="2">Title</th>
+                            <th colspan="6" class="text-center">Hours</th>
+                            <th colspan="8" class="text-center">Hours per Semester</th>
+                            <th colspan="8" class="text-center">Credits per Semester</th>
+                            <th rowspan="2">Total Credits</th>
+                        </tr>
+                        <tr>
+                            <th>Total</th>
+                            <th>Lecture</th>
+                            <th>Practice</th>
+                            <th>Lab</th>
+                            <th>Seminar</th>
+                            <th>Self</th>
+                            {% for i in "12345678" %}
+                            <th>{{ i }}</th>
+                            {% endfor %}
+                            {% for i in "12345678" %}
+                            <th>{{ i }}</th>
+                            {% endfor %}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for course in courses %}
+                        <tr>
+                            <td>{{ course.code }}</td>
+                            <td>{{ course.title }}</td>
+                            <td>{{ course.total_hours }}</td>
+                            <td>{{ course.lecture_hours }}</td>
+                            <td>{{ course.practice_hours }}</td>
+                            <td>{{ course.lab_hours }}</td>
+                            <td>{{ course.seminar_hours }}</td>
+                            <td>{{ course.self_study_hours }}</td>
+                            {% with dist=course.coursedistribution_set.first %}
+                                <td>{{ dist.hours_sem1 }}</td>
+                                <td>{{ dist.hours_sem2 }}</td>
+                                <td>{{ dist.hours_sem3 }}</td>
+                                <td>{{ dist.hours_sem4 }}</td>
+                                <td>{{ dist.hours_sem5 }}</td>
+                                <td>{{ dist.hours_sem6 }}</td>
+                                <td>{{ dist.hours_sem7 }}</td>
+                                <td>{{ dist.hours_sem8 }}</td>
+                                <td>{{ dist.credits_sem1 }}</td>
+                                <td>{{ dist.credits_sem2 }}</td>
+                                <td>{{ dist.credits_sem3 }}</td>
+                                <td>{{ dist.credits_sem4 }}</td>
+                                <td>{{ dist.credits_sem5 }}</td>
+                                <td>{{ dist.credits_sem6 }}</td>
+                                <td>{{ dist.credits_sem7 }}</td>
+                                <td>{{ dist.credits_sem8 }}</td>
+                                <td>{{ dist.total_credits }}</td>
+                            {% endwith %}
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

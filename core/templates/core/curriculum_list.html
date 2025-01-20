@@ -1,0 +1,48 @@
+{% extends "dashboard_layout.html" %}
+
+{% block title %}Curricula{% endblock %}
+
+{% block content %}
+<div class="container-fluid p-4">
+    <div class="card">
+        <div class="card-body">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2>Curricula</h2>
+                <a href="{% url 'curriculum_create' %}" class="btn btn-primary">Create New</a>
+            </div>
+            
+            <div class="table-responsive">
+                <table class="table table-bordered">
+                    <thead>
+                        <tr>
+                            <th>Code</th>
+                            <th>Title</th>
+                            <th>Degree Type</th>
+                            <th>Duration</th>
+                            <th>Total Credits</th>
+                            <th>Total Courses</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for curriculum in curricula %}
+                        <tr>
+                            <td>{{ curriculum.code }}</td>
+                            <td>{{ curriculum.title }}</td>
+                            <td>{{ curriculum.get_degree_type_display }}</td>
+                            <td>{{ curriculum.duration }} years</td>
+                            <td>{{ curriculum.total_credits }}</td>
+                            <td>{{ curriculum.total_courses }}</td>
+                            <td>
+                                <a href="{% url 'curriculum_detail' curriculum.pk %}" class="btn btn-sm btn-info">View</a>
+                                <a href="{% url 'curriculum_update' curriculum.pk %}" class="btn btn-sm btn-secondary">Edit</a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

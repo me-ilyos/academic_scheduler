@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+
+{% block layout %}
+<div class="form-page">
+    <div class="form-container">
+        <h2 class="text-center mb-4">{% block header %}{% endblock %}</h2>
+        {% block content %}{% endblock %}
+    </div>
+</div>
+{% endblock %}
