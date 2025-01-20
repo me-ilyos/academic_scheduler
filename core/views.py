@@ -320,7 +320,6 @@ class CurriculumListView(DepartmentAdminRequiredMixin, ListView):
         return context
 
 
-# views.py
 class CourseDistributionDetailView(DepartmentAdminRequiredMixin, View):
     template_name = "core/course_distribution_detail.html"
 
@@ -330,27 +329,36 @@ class CourseDistributionDetailView(DepartmentAdminRequiredMixin, View):
         )
         distribution = CourseDistribution.objects.filter(course=course).first()
 
-        # Get number of semesters from curriculum duration
-        total_semesters = course.curriculum.duration * 2  # 2 semesters per year
+        try:
+            dist_data = {}
+            for sem in range(1, 9):
+                dist_data[f"sem{sem}"] = {
+                    "lecture": getattr(distribution, f"hours_lecture_sem{sem}", 0),
+                    "practice": getattr(distribution, f"hours_practice_sem{sem}", 0),
+                    "lab": getattr(distribution, f"hours_lab_sem{sem}", 0),
+                    "seminar": getattr(distribution, f"hours_seminar_sem{sem}", 0),
+                    "self_study": getattr(
+                        distribution, f"hours_self_study_sem{sem}", 0
+                    ),
+                }
+        except Exception as e:
+            print(f"Error getting distribution: {e}")
+            dist_data = {}
 
-        # Calculate lessons (2 hours per lesson)
-        lecture_lessons = course.lecture_hours // 2
-        practice_lessons = course.practice_hours // 2
-        lab_lessons = course.lab_hours // 2
-        seminar_lessons = course.seminar_hours // 2
-
-        # Initialize semester data for all possible semesters
         semester_data = []
-        for sem in range(1, total_semesters + 1):
+        for sem in range(1, 9):
+            sem_hours = dist_data.get(f"sem{sem}", {})
+            hours_sum = sum(sem_hours.values()) if sem_hours else 0
+
             semester_data.append(
                 {
                     "semester": sem,
-                    "lecture": getattr(distribution, f"hours_sem{sem}", 0),
-                    "practice": getattr(distribution, f"hours_sem{sem}", 0),
-                    "lab": getattr(distribution, f"hours_sem{sem}", 0),
-                    "seminar": getattr(distribution, f"hours_sem{sem}", 0),
-                    "self_study": getattr(distribution, f"hours_sem{sem}", 0),
-                    "total_hours": getattr(distribution, f"hours_sem{sem}", 0),
+                    "lecture": sem_hours.get("lecture", 0),
+                    "practice": sem_hours.get("practice", 0),
+                    "lab": sem_hours.get("lab", 0),
+                    "seminar": sem_hours.get("seminar", 0),
+                    "self_study": sem_hours.get("self_study", 0),
+                    "total_hours": hours_sum,
                     "credits": getattr(distribution, f"credits_sem{sem}", 0),
                 }
             )
@@ -360,6 +368,7 @@ class CourseDistributionDetailView(DepartmentAdminRequiredMixin, View):
             "distribution": distribution,
             "semester_data": semester_data,
             "total_credits": distribution.total_credits if distribution else 0,
+            "total_hours": course.total_hours,
         }
 
         return render(request, self.template_name, context)
@@ -371,40 +380,102 @@ class CourseHourDistributionView(DepartmentAdminRequiredMixin, View):
             course = get_object_or_404(
                 Course, id=course_id, curriculum__department=self.get_department()
             )
+
+            # Get and validate semester selections
             selected_semesters = request.POST.getlist("semesters[]")
-
             if not selected_semesters:
-                return JsonResponse({"error": "No semesters selected"}, status=400)
+                return JsonResponse(
+                    {"error": "Please select at least one semester"}, status=400
+                )
 
-            distribution = distribute_course_hours(course, selected_semesters)
+            # Convert to integers and sort
+            selected_semesters = sorted([int(sem) for sem in selected_semesters])
+            num_semesters = len(selected_semesters)
 
-            # Update CourseDistribution
-            distribution_obj = CourseDistribution.objects.get_or_create(course=course)[
-                0
-            ]
+            # Calculate base hours per semester
+            base_distribution = {
+                "lecture": course.lecture_hours // num_semesters,
+                "practice": course.practice_hours // num_semesters,
+                "lab": course.lab_hours // num_semesters,
+                "seminar": course.seminar_hours // num_semesters,
+                "self_study": course.self_study_hours // num_semesters,
+            }
+
+            # Calculate remainders
+            remainders = {
+                "lecture": course.lecture_hours % num_semesters,
+                "practice": course.practice_hours % num_semesters,
+                "lab": course.lab_hours % num_semesters,
+                "seminar": course.seminar_hours % num_semesters,
+                "self_study": course.self_study_hours % num_semesters,
+            }
+
+            # Create distribution for each semester
+            distribution = {}
+            for i, sem in enumerate(selected_semesters):
+                distribution[f"sem{sem}"] = {
+                    "lecture": base_distribution["lecture"]
+                    + (1 if i < remainders["lecture"] else 0),
+                    "practice": base_distribution["practice"]
+                    + (1 if i < remainders["practice"] else 0),
+                    "lab": base_distribution["lab"]
+                    + (1 if i < remainders["lab"] else 0),
+                    "seminar": base_distribution["seminar"]
+                    + (1 if i < remainders["seminar"] else 0),
+                    "self_study": base_distribution["self_study"]
+                    + (1 if i < remainders["self_study"] else 0),
+                }
+
+            # Get or create distribution object
+            distribution_obj, created = CourseDistribution.objects.get_or_create(
+                course=course
+            )
 
             # Reset all semester hours
-            for i in range(1, 9):
-                setattr(distribution_obj, f"hours_sem{i}", 0)
-                setattr(distribution_obj, f"credits_sem{i}", 0)
+            for sem in range(1, 9):
+                distribution_obj.set_semester_hours(
+                    sem,
+                    {
+                        "lecture": 0,
+                        "practice": 0,
+                        "lab": 0,
+                        "seminar": 0,
+                        "self_study": 0,
+                    },
+                )
 
-            # Set hours and calculate credits for selected semesters
+            # Set new distribution
+            total_credits = 0
             for sem in selected_semesters:
                 sem_dist = distribution[f"sem{sem}"]
-                total_sem_hours = sum(sem_dist.values())
-                credits = max(
-                    1, round(total_sem_hours / 30)
-                )  # 1 credit = 30 hours, minimum 1 credit
 
-                setattr(distribution_obj, f"hours_sem{sem}", total_sem_hours)
+                # Set hours for each type
+                distribution_obj.set_semester_hours(sem, sem_dist)
+
+                # Calculate credits (30 hours = 1 credit)
+                total_hours = sum(sem_dist.values())
+                credits = max(1, round(total_hours / 30))
                 setattr(distribution_obj, f"credits_sem{sem}", credits)
+                total_credits += credits
 
-            distribution_obj.total_credits = sum(
-                getattr(distribution_obj, f"credits_sem{i}", 0) for i in range(1, 9)
-            )
+            # Update total credits
+            distribution_obj.total_credits = total_credits
             distribution_obj.save()
 
-            return JsonResponse({"success": True, "distribution": distribution})
+            return JsonResponse(
+                {
+                    "success": True,
+                    "distribution": distribution,
+                    "total_credits": total_credits,
+                }
+            )
 
+        except ValueError as e:
+            return JsonResponse(
+                {"error": f"Invalid semester value: {str(e)}"}, status=400
+            )
         except Exception as e:
-            return JsonResponse({"error": str(e)}, status=400)
+            print(f"Error distributing hours: {str(e)}")
+            return JsonResponse(
+                {"error": "An error occurred while distributing hours"}, status=400
+            )

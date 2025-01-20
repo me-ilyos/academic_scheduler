@@ -60,7 +60,6 @@ class DepartmentAdminProfile(models.Model):
     department = models.OneToOneField(Department, on_delete=models.CASCADE)
 
 
-# Add to models.py
 class Curriculum(models.Model):
     DEGREE_CHOICES = [("BS", "Bachelor"), ("MS", "Master of Science")]
 
@@ -100,15 +99,55 @@ class Course(models.Model):
 class CourseDistribution(models.Model):
     course = models.ForeignKey(Course, on_delete=models.CASCADE)
 
-    # Hours per semester
-    hours_sem1 = models.IntegerField(default=0)
-    hours_sem2 = models.IntegerField(default=0)
-    hours_sem3 = models.IntegerField(default=0)
-    hours_sem4 = models.IntegerField(default=0)
-    hours_sem5 = models.IntegerField(default=0)
-    hours_sem6 = models.IntegerField(default=0)
-    hours_sem7 = models.IntegerField(default=0)
-    hours_sem8 = models.IntegerField(default=0)
+    # Lecture hours per semester
+    hours_lecture_sem1 = models.IntegerField(default=0)
+    hours_lecture_sem2 = models.IntegerField(default=0)
+    hours_lecture_sem3 = models.IntegerField(default=0)
+    hours_lecture_sem4 = models.IntegerField(default=0)
+    hours_lecture_sem5 = models.IntegerField(default=0)
+    hours_lecture_sem6 = models.IntegerField(default=0)
+    hours_lecture_sem7 = models.IntegerField(default=0)
+    hours_lecture_sem8 = models.IntegerField(default=0)
+
+    # Practice hours per semester
+    hours_practice_sem1 = models.IntegerField(default=0)
+    hours_practice_sem2 = models.IntegerField(default=0)
+    hours_practice_sem3 = models.IntegerField(default=0)
+    hours_practice_sem4 = models.IntegerField(default=0)
+    hours_practice_sem5 = models.IntegerField(default=0)
+    hours_practice_sem6 = models.IntegerField(default=0)
+    hours_practice_sem7 = models.IntegerField(default=0)
+    hours_practice_sem8 = models.IntegerField(default=0)
+
+    # Lab hours per semester
+    hours_lab_sem1 = models.IntegerField(default=0)
+    hours_lab_sem2 = models.IntegerField(default=0)
+    hours_lab_sem3 = models.IntegerField(default=0)
+    hours_lab_sem4 = models.IntegerField(default=0)
+    hours_lab_sem5 = models.IntegerField(default=0)
+    hours_lab_sem6 = models.IntegerField(default=0)
+    hours_lab_sem7 = models.IntegerField(default=0)
+    hours_lab_sem8 = models.IntegerField(default=0)
+
+    # Seminar hours per semester
+    hours_seminar_sem1 = models.IntegerField(default=0)
+    hours_seminar_sem2 = models.IntegerField(default=0)
+    hours_seminar_sem3 = models.IntegerField(default=0)
+    hours_seminar_sem4 = models.IntegerField(default=0)
+    hours_seminar_sem5 = models.IntegerField(default=0)
+    hours_seminar_sem6 = models.IntegerField(default=0)
+    hours_seminar_sem7 = models.IntegerField(default=0)
+    hours_seminar_sem8 = models.IntegerField(default=0)
+
+    # Self study hours per semester
+    hours_self_study_sem1 = models.IntegerField(default=0)
+    hours_self_study_sem2 = models.IntegerField(default=0)
+    hours_self_study_sem3 = models.IntegerField(default=0)
+    hours_self_study_sem4 = models.IntegerField(default=0)
+    hours_self_study_sem5 = models.IntegerField(default=0)
+    hours_self_study_sem6 = models.IntegerField(default=0)
+    hours_self_study_sem7 = models.IntegerField(default=0)
+    hours_self_study_sem8 = models.IntegerField(default=0)
 
     # Credits per semester
     credits_sem1 = models.IntegerField(default=0)
@@ -119,10 +158,31 @@ class CourseDistribution(models.Model):
     credits_sem6 = models.IntegerField(default=0)
     credits_sem7 = models.IntegerField(default=0)
     credits_sem8 = models.IntegerField(default=0)
+
     total_credits = models.IntegerField(blank=True, null=True)
 
     class Meta:
         unique_together = ["course"]
+
+    def get_semester_hours(self, semester):
+        """Get all hours for a specific semester"""
+        return {
+            "lecture": getattr(self, f"hours_lecture_sem{semester}"),
+            "practice": getattr(self, f"hours_practice_sem{semester}"),
+            "lab": getattr(self, f"hours_lab_sem{semester}"),
+            "seminar": getattr(self, f"hours_seminar_sem{semester}"),
+            "self_study": getattr(self, f"hours_self_study_sem{semester}"),
+        }
+
+    def set_semester_hours(self, semester, hours_dict):
+        """Set hours for a specific semester"""
+        for hour_type, hours in hours_dict.items():
+            setattr(self, f"hours_{hour_type}_sem{semester}", hours)
+
+    def get_total_semester_hours(self, semester):
+        """Get total hours for a semester"""
+        hours = self.get_semester_hours(semester)
+        return sum(hours.values())
 
 
 @receiver(post_save, sender=UniversityUser)

@@ -122,4 +122,4 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 AUTH_USER_MODEL = "core.UniversityUser"
 
-GEMINI_API_KEY = "AIzaSyDPmvfo6kf1m0Rk-RWxP_YwiLs9l-ECwzE"
+GEMINI_API_KEY = os.getenv("SECRET_KEY")
